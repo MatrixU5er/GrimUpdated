@@ -24,8 +24,12 @@ import java.util.List;
 
 @CheckData(name = "RotationPlace")
 public class RotationPlace extends BlockPlaceCheck {
-    double flagBuffer = 0; // If the player flags once, force them to play legit, or we will cancel the tick before.
-    boolean ignorePost = false;
+    private static double flagBufferMax = 1;
+    private static double flagBufferIncrement = 1;
+    private static double flagBufferDecay = 0.1;
+
+    private double flagBuffer = 0; // If the player flags once, force them to play legit, or we will cancel the tick before.
+    private boolean ignorePost = false;
 
     public RotationPlace(GrimPlayer player) {
         super(player);
@@ -60,10 +64,10 @@ public class RotationPlace extends BlockPlaceCheck {
         boolean hit = didRayTraceHit(place);
         // This can false with rapidly moving yaw in 1.8+ clients
         if (!hit) {
-            flagBuffer = 1;
+            flagBuffer = Math.min(flagBuffer + flagBufferIncrement, flagBufferMax);
             flagAndAlert("post-flying");
         } else {
-            flagBuffer = Math.max(0, flagBuffer - 0.1);
+            flagBuffer = Math.max(0, flagBuffer - flagBufferDecay);
         }
     }
 
@@ -112,5 +116,18 @@ public class RotationPlace extends BlockPlaceCheck {
         }
 
         return false;
+    }
+
+    @Override
+    public void reload() {
+        super.reload();
+
+        flagBufferMax = getConfig().getDoubleElse(getConfigName() + ".flag-buffer-max", 1);
+        flagBufferIncrement = getConfig().getDoubleElse(getConfigName() + ".flag-buffer-increment", 1);
+        flagBufferDecay = getConfig().getDoubleElse(getConfigName() + ".flag-buffer-decay", 0.1);
+
+        if (flagBufferMax == -1) {
+            flagBufferMax = Double.MAX_VALUE;
+        }
     }
 }
