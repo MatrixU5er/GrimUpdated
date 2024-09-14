@@ -140,6 +140,10 @@ TimerVehicle:
 EntityControl:
   setbackvl: 25
 
+PacketOrderL:
+  # enable if players are getting flagged for using 1.7 animations mods
+  exemptBreaking: false
+
 Reach:
   # Por quanto devíamos expandir as caixas de colisão? 0.0005 deve detectar 3.0005+ de alcance.
   #
