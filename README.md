@@ -1,89 +1,65 @@
 # GrimAC
+  
+GrimAC (Modified)是一款开源的Minecraft反作弊软件，专为1.8版本设计，支持1.8-1.21版本。在测试阶段是免费的。它最终将变为付费软件，并 / 或 将提供额外的基于订阅的付费检查。Geyser玩家完全豁免检查。
 
-GrimAC is an open source Minecraft anticheat designed for 1.21 and supports 1.8-1.21. It is free while in beta. It will eventually become paid and/or will include offering additional subscription based paid checks. Geyser players are fully exempt.
+### 通过终端 / 命令提示符编译 
+1. git clone https://github.com/MatrixU5er/Grim.git (或点击绿色代码按钮，下载ZIP，然后解压缩。)
+2. cd Grim
+3. gradlew build
+4. 最终的jar位于build/libs中
 
-This project is considered feature complete for the 2.0 (open-source) branch of this project. If you would like a bugfix or enhancement and cannot sponsor the work, pull requests are welcome.
+### API信息
+Grim的API允许您将Grim集成到您自己的插件中。有关更多信息，请查看API的GitHub存储库[这里](https://github.com/GrimAnticheat/GrimAPI)。
+ 
+## GrimAC的主要功能
+ 
+以下是使 Grim 脱颖而出的主要核心
+ 
+### 模拟移动引擎
+ 
+* 我们对玩家可能出现的动作进行了1:1的复制
+* 这涵盖了从基本的步行、游泳、击退、蜘蛛网到气泡柱的所有内容
+*它甚至涵盖了从船到猪到漫游者的骑行实体
+* 以覆盖边缘情况为基础，以确认准确性
+* 1.13+ 服务器上的 1.13+ 客户端、1.13+ 服务器上的 1.12- 客户端、1.12- 服务器上的 1.13+ 客户端和 1.12- 服务器上的 1.12- 客户端都受支持，而不管这些版本之间存在哪些重大的技术变化。
+冲突的顺序取决于客户端版本，并且是正确的
+* 考虑版本之间的小边界框差异，例如：
+    * 1.7-1.8 玩家使用的单块玻璃窗格将呈 + 形，1.9+ 玩家使用的单块玻璃窗格将呈 * 形
+    * 1.8服务器上的1.13+客户端会看到ViaVersion的+玻璃窗格命中框
+    *许多其他街区对细节也极为关注。
+    * 1.12 或以下版本玩家不存在水浸方块
+    * 客户端版本中不存在的块使用ViaVersion的替换块
+    * 无法转换为以前版本的数据块被正确替换
+    *所有香草碰撞盒都已实现
+ 
+### 完全异步多线程设计
+ 
+* 所有移动检查和绝大多数监听器都在 netty 线程上运行
+反作弊系统可以扩展到数百名玩家，甚至更多
+*线程安全经过仔细考虑
+*下一个核心允许这种设计
+ ### 世界完全复制
 
-## Downloads
-- [Modrinth](https://modrinth.com/plugin/grimac)
-- [Hangar](https://hangar.papermc.io/GrimAnticheat/GrimAnticheat)
-- [SpigotMC](https://www.spigotmc.org/resources/grim-anticheat.99923/)
-- *For bleeding edge builds use* [Github artifacts](https://nightly.link/GrimAnticheat/Grim/workflows/gradle-publish/2.0/artifact.zip)
+* 反作弊系统为每位玩家保留了一个世界副本
+* 副本是通过监听区块数据包、方块放置和方块变化来创建的
+* 在所有版本中，区块被压缩到每区块16-64 KB，使用调色板技术
+* 利用这个缓存，反作弊系统可以安全地访问世界状态
+* 对于每位玩家，缓存允许设计多线程
+* 通过发送数据包给玩家发送假方块是安全的，不会导致误报
+* 为每位玩家重新创建世界，以实现延迟补偿
+* 客户端侧的方块不会与基于数据包的方块产生冲突。方块漏洞不会导致反作弊系统的误报。
 
-## Installation notes
-> [!WARNING]
-> Java 17 is now required. More information [here](https://github.com/GrimAnticheat/Grim/wiki/Updating-to-Java-17).
-- Paper, Spigot, and Folia are currently supported.
-- If you use Geyser, place Floodgate on the backend server so grim can exempt bedrock players. Grim cannot access the Floodgate API if it is on the proxy.
-- If you use ViaVersion, it should be on the backend server as movement is highly dependent on client version.
+### 延迟补偿
 
-## Support & wiki information
-- Support & discussion: [Discord](https://discord.com/invite/kqQAhTmkUF)
-- Report issues: [Issues](https://github.com/GrimAnticheat/Grim/issues/new/choose)
-- Wiki & examples: [Wiki](https://github.com/GrimAnticheat/Grim/wiki)
+* 世界的变化会被排队，直到它们到达玩家
+* 这意味着在玩家下方破坏方块不会导致反作弊系统的误报
+* 从飞行状态到移动速度的所有内容都将得到延迟补偿
 
-## Developer API
-Grim's API allows you to integrate Grim into your own plugins.
-- API repository: [GrimAPI](https://github.com/GrimAnticheat/GrimAPI)
-- Wiki info: [Wiki](https://github.com/GrimAnticheat/GrimAPI)
+### 库存补偿
 
-## How to compile
+* 玩家的库存被跟踪，以防止在高延迟下出现幽灵方块和其他错误
 
-1. `git clone https://github.com/GrimAnticheat/Grim.git`
-2. `cd Grim`
-3. `./gradlew build`
-4. The final jar will compile into the build/libs folder
+### 设计上的安全，而非隐蔽性
 
-## Grim supremacy
-
-What makes Grim stand out against other anticheats?
-
-### Movement Simulation Engine
-
-* We have a 1:1 replication of the player's possible movements
-* This covers everything from basic walking, swimming, knockback, cobwebs, to bubble columns
-* It even covers riding entities from boats to pigs to striders
-* Built upon covering edge cases to confirm accuracy
-* 1.13+ clients on 1.13+ servers, 1.12- clients on 1.13+ servers, 1.13+ clients on 1.12- servers, and 1.12- clients on 1.12- servers are all supported regardless of the large technical changes between these versions.
-* The order of collisions depends on the client version and is correct
-* Accounts for minor bounding box differences between versions, for example:
-    * Single glass panes will be a + shape for 1.7-1.8 players and * for 1.9+ players
-    * 1.13+ clients on 1.8 servers see the + glass pane hitbox due to ViaVersion
-    * Many other blocks have this extreme attention to detail.
-    * Waterlogged blocks do not exist for 1.12 or below players
-    * Blocks that do not exist in the client's version use ViaVersion's replacement block
-    * Block data that cannot be translated to previous versions is replaced correctly
-    * All vanilla collision boxes have been implemented
-
-### Fully asynchronous and multithreaded design
-
-* All movement checks and the overwhelming majority of listeners run on the netty thread
-* The anticheat can scale to many hundreds of players, if not more
-* Thread safety is carefully thought out
-* The next core allows for this design
-
-### Full world replication
-
-* The anticheat keeps a replica of the world for each player
-* The replica is created by listening to chunk data packets, block places, and block changes
-* On all versions, chunks are compressed to 16-64 kb per chunk using palettes
-* Using this cache, the anticheat can safely access the world state
-* Per player, the cache allows for multithreaded design
-* Sending players fake blocks with packets is safe and does not lead to falses
-* The world is recreated for each player to allow lag compensation
-* Client sided blocks cause no issues with packet based blocks. Block glitching does not false the anticheat.
-
-### Latency compensation
-
-* World changes are queued until they reach the player
-* This means breaking blocks under a player does not false the anticheat
-* Everything from flying status to movement speed will be latency compensated
-
-### Inventory compensation
-
-* The player's inventory is tracked to prevent ghost blocks at high latency, and other errors
-
-### Secure by design, not obscurity
-
-* All systems are designed to be highly secure and mathematically impossible to bypass
-* For example, the prediction engine knows all possible movements and cannot be bypassed
+* 所有系统都设计得非常安全，从数学上讲是不可能被绕过的
+* 例如，预测引擎知道所有可能的运动，因此无法被绕过
